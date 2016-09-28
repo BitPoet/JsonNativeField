@@ -1,0 +1,97 @@
+<?php
+
+
+class InputfieldJsonNativeFields extends Inputfield implements Module {
+	public static function getModuleInfo() {
+		return array(
+			"title"				=>	"Inputfield Json Native Fields",
+			"summary"			=>	"Stores multiple searchable key-value-pairs in a JSON field",
+			"version"			=>	"0.0.1",
+			"installs"			=>	array("FieldtypeJsonNative"),
+		);
+	}
+	
+	public function ___render() {
+		$value = $this->attr('value') ?: new JsonData();
+		
+		$name = $this->attr('name');
+
+		$tbl = $this->modules->get("MarkupAdminDataTable");
+		$tbl->setEncodeEntities(false);
+		
+		$tbl->headerRow(array(
+			$this->_("Field"),
+			$this->_("Value"),
+			$this->_("Delete")
+		));
+		
+		$data = $value->getArray();
+		
+		$n = 0;
+		
+		$tbl->row(array(
+			$this->_("Note: Name must be unique"),
+			$this->_("Value can hold any content"),
+			""
+		));
+		
+		$trashbtn = "<a class='InputfieldJsonNativeDelete' href='#'><li class='fa fa-trash'> " . $this->_("Delete") . "</a>";
+
+		foreach($data as $k => $v) {
+			$inpName = $this->modules->get("InputfieldText");
+			$inpName->addClass("InputfieldJsonNativeMonitor InputfieldJsonNativeName");
+			$inpName->size = 40;
+			$inpName->attr('name', "{$this->id}_name_$n");
+			$inpName->attr('value',$this->sanitizer->entities1($k));
+			
+			$inpValue = $this->modules->get("InputfieldText");
+			$inpValue->addClass("InputfieldJsonNativeMonitor InputfieldJsonNativeValue");
+			$inpValue->size = 40;
+			$inpValue->attr('name', "{$this->id}_value_$n");
+			$inpValue->attr('value',$this->sanitizer->entities1($v));
+
+			$tbl->row(array(
+				$inpName->render(),
+				$inpValue->render(),
+				$trashbtn
+			));
+		}
+
+		$fs = $this->modules->get("InputfieldFieldset");
+		$fs->title = $this->_("New Entry");
+		
+		$inpName = $this->modules->get("InputfieldText");
+		$inpName->addClass("InputfieldJsonNativeName");
+		$inpName->label = $this->_("Name of new field");
+		$inpName->columnWidth = 50;
+		$inpName->size = 40;
+		$inpName->attr('name', "{$this->name}_name_new");
+		$inpName->attr('value', '');
+		$fs->append($inpName);
+		
+		$inpValue = $this->modules->get("InputfieldText");
+		$inpValue->addClass("InputfieldJsonNativeValue");
+		$inpValue->label = $this->_("Value for new field (may be empty)");
+		$inpValue->columnWidth = 50;
+		$inpValue->size = 40;
+		$inpValue->attr('name', "{$this->name}_value_new");
+		$inpValue->attr('value', '');
+		$fs->append($inpValue);
+
+		$btn = $this->modules->get("InputfieldButton");
+		$btn->addClass('fa fa-circle-plus');
+		$btn->addClass("InputfieldJsonNativeAdd");
+		$btn->attr('value', $this->_("Add"));
+		$fs->append($btn);
+		
+		$out = "<div class='InputfieldWrapper InputfieldJsonNativeWrap' data-id='{$this->id}' data-name='{$this->name}'>\n" .
+			   $tbl->render() . "\n" .
+			   $fs->render() . "\n" .
+			   "<input type='hidden' id='{$this->id}' name='{$this->name}' value='" . $this->sanitizer->entities($value->getJson()) . "'>\n" .
+			   "</div>\n"
+		;
+		
+		return $out;
+	}
+	
+}

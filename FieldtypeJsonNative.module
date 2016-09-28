@@ -1,0 +1,134 @@
+<?php
+
+
+class FieldtypeJsonNative extends Fieldtype implements Module {
+	public static function getModuleInfo() {
+		return array(
+			"title"				=>	"Fieldtype Json Native",
+			"summary"			=>	"Fieldtype utilizing native MySQL support for JSON columns",
+			"version"			=>	"0.0.1",
+		);
+	}
+	
+	public function getBlankValue(Page $page, Field $field) {
+		return new JsonData();
+	}
+	
+	public function ___wakeupValue(Page $page, Field $field, $value) {
+		if($value instanceof JsonData) return $value;
+		$f = new JsonData((string)$value);
+		return $f;
+	}
+
+	public function ___sleepValue(Page $page, Field $field, $value) {
+		return $value->getJson();
+	}
+
+	public function sanitizeValue(Page $page, Field $field, $value) {
+		if(! $value instanceof JsonData) $value = new JsonData((string)$value);
+		return $value;
+	}
+
+	public function ___exportValue(Page $page, Field $field, $value, array $options = array()) {
+		if($value instanceof JsonData) $value = $value->getJson();
+		return $value; 
+	}
+
+	/**
+	 * Format the value for output, according to selected format and language
+	 *
+	 */
+	public function ___formatValue(Page $page, Field $field, $value) {
+		if($value instanceof JsonData) $value = $value->getJson();
+		return $value;
+	}
+
+	public function getMatchQuery($query, $table, $subfield, $operator, $value) {
+		$database = $this->wire("database");
+
+		if(empty($subfield) || $subfield == "data") {
+			$path = '$.*';
+		} else {
+			$path = '$.' . $subfield;
+		}
+
+		$table = $database->escapeTable($table);
+		$value = $database->escapeStr($value);
+		if($operator == "=") {
+			$query->where("JSON_SEARCH({$table}.data, 'one', '$value', NULL, '$path') IS NOT NULL");			
+		} else if($operator == "*=" || $operator == "%=") {
+			$query->where("JSON_SEARCH({$table}.data, 'one', '%$value%', NULL, '$path') IS NOT NULL");			
+		} else if($operator == "^=") {
+			$query->where("JSON_SEARCH({$table}.data, 'one', '$value%', NULL, '$path') IS NOT NULL");			
+		} else if($operator == "$=") {
+			$query->where("JSON_SEARCH({$table}.data, 'one', '%$value', NULL, '$path') IS NOT NULL");			
+		}
+
+		return $query; 
+	}
+
+	
+	public function getDatabaseSchema(Field $field) {
+		$engine = $this->wire('config')->dbEngine; 
+		$charset = $this->wire('config')->dbCharset;
+		$schema = array(
+			'pages_id' => 'int UNSIGNED NOT NULL', 
+			'data' => "JSON", // each Fieldtype should override this in particular
+			'keys' => array(
+				'primary' => 'PRIMARY KEY (`pages_id`)',
+			),
+			// additional data 
+			'xtra' => array(
+				// any optional statements that should follow after the closing paren (i.e. engine, default charset, etc)
+				'append' => "ENGINE=$engine DEFAULT CHARSET=$charset", 
+				
+				// true (default) if this schema provides all storage for this fieldtype.
+				// false if other storage is involved with this fieldtype, beyond this schema (like repeaters, PageTable, etc.)
+				'all' => true, 
+			)
+		); 
+		return $schema; 
+	}
+
+    public function getInputfield(Page $page, Field $field) {
+        $inputField = $this->modules->get('InputfieldJsonNativeFields');
+        return $inputField;
+    }
+	
+	public function install() {
+		if($this->config->dbEngine != "InnoDB") {
+			throw new WireException($this->_("InnoDB database engine needs to be used for native JSON support"));
+		}
+		
+		$dbver = $this->database->getAttribute(PDO::ATTR_SERVER_VERSION);
+		if(version_compare($dbver, '5.7.8', '<')) {
+			throw new WireException(sprintf($this->_("MySQL Server version needs to be at least 5.7.8 for fully working JSON support, installed version is %s"), $dbver));
+		}
+	}
+}
+
+
+class JsonData extends WireData {
+	public function __construct($value = NULL) {
+		parent::__construct();
+		if($value !== NULL) {
+			try {
+				$vals = json_decode($value);
+				foreach($vals as $k => $v) {
+					$this->set($k, $v);
+				}
+			} catch(Exception $e) {
+				// JSON parsing failed. Do nothing for now.
+			}
+		}
+	}
+	
+	public function getJson() {
+		return json_encode($this->getArray(), JSON_FORCE_OBJECT);
+	}
+	
+	public function __toString() {
+		return $this->getJson();
+	}
+}
+
