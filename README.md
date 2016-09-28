@@ -33,3 +33,7 @@ The fieldtype was created with supporting user-defined fields e.g. for personal 
 - Currently, all values are treated as strings
 - The UI for the inputfield is still a bit rough, as is the JS code
 - Some more sanity checks for field names and values are necessary
+
+## License
+
+Mozilla Public License v2 (see file "LICENSE" for details)
