@@ -3,13 +3,17 @@ $(document).ready(function() {
 	
 	function updateJson(inpid, wrapel) {
 		var $names = $(wrapel).find('.InputfieldJsonNativeName');
+		var $types = $(wrapel).find('.InputfieldJsonNativeType');
 		var $values = $(wrapel).find('.InputfieldJsonNativeValue');
 		
 		var jsobj = {};
 		
 		for(var i = 0; i < $names.length; i++) {
 			if($names.eq(i).val()) {
-				jsobj[$names.eq(i).val()] = $values.eq(i).val();
+				jsobj[$names.eq(i).val()] = {
+					type:	$types.eq(i).val(),
+					value:	$values.eq(i).val()
+				};
 			}
 		}
 		
@@ -17,7 +21,8 @@ $(document).ready(function() {
 	}
 
 	function insertRow(inpidP, wrapel) {
-		var cnt = $(wrapel).find('tr').length + 1;
+		var cnt = $(wrapel).data('rowcount') + 1;
+		$(wrapel).data('rowcount', cnt);
 		var inpid = $(wrapel).data('id');
 
 		var $name = $(wrapel).find('#' + inpid + '_name_new');
@@ -46,20 +51,21 @@ $(document).ready(function() {
 			selval = 'text';
 		}
 		
-		var $newtypesel = $(config.jsonnative.typeselect, {
-			id:			inpid + '_type_' + cnt,
-			data:		{
-				idsuffix:		$type.data('idsuffix'),
-				idprefix:		$type.data('idprefix')
-			}
-		});
+		console.dir($type);
+		var $newtypesel = $(config.jsonnative.typeselect);
+		var prefix = $type.data('idprefix');
+		$newtypesel.attr('id', inpid + '_type_' + cnt);
+		$newtypesel.attr('name', inpid + '_type_' + cnt);
+		$newtypesel.addClass('InputfieldJsonNativeType');
+		$newtypesel.attr('data-idsuffix', cnt);
+		$newtypesel.attr('data-idprefix', prefix);
 		$newtypesel.val(selval);
 		
 		var newval = $value.val();
-		var $newfld = $(config.jsonnative[selval], {
-			id:			inpid + '_value_' + cnt,
-			class:		'InputfieldJsonNativeMonitor InputfieldJsonNativeValue'
-		});
+		var $newfld = $(config.jsonnative[selval]);
+		$newfld.addClass('InputfieldJsonNativeMonitor InputfieldJsonNativeValue');
+		$newfld.attr('id', inpid + '_value_' + cnt);
+		$newfld.attr('name', inpid + '_value_' + cnt);
 		$newfld.val(newval);
 		
 		var $row = $('<tr>', {
@@ -121,22 +127,25 @@ $(document).ready(function() {
 	}
 	
 	function switchType(selinp, wrap) {
+		console.log("switchType(" + $(selinp).attr('id') + ", wrap)");
 		var $selinp = $(selinp);
 		var $wrap = $(wrap);
 		
-		var value = $selinp.val();
-		if(! value) {
-			value = "text";
+		var selval = $selinp.val();
+		if(! selval) {
+			selval = "text";
 		}
 		
 		var $valuefield = $wrap.find('#' + $selinp.data('idprefix') + "_value_" + $selinp.data('idsuffix'));
 		var curval = $valuefield.val();
+		var curname = $valuefield.attr('name');
+		var curid = $valuefield.attr('id');
 		
-		var $newinp = $(config.jsonnative[value]);
-		$newinp.attr('id', $valuefield.attr('id'));
-		$newinp.attr('name', $valuefield.attr('name'));
+		var $newinp = $(config.jsonnative[selval]);
+		$newinp.attr('name', curname);
+		$newinp.attr('id', curid);
 		$newinp.val(curval);
-
+		console.dir($newinp)
 		$valuefield.replaceWith($newinp);
 	}
 

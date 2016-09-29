@@ -15,13 +15,16 @@ class FieldtypeJsonNative extends Fieldtype implements Module {
 	}
 	
 	public function ___wakeupValue(Page $page, Field $field, $value) {
+		$this->log->message("wakeupValue($value)");
 		if($value instanceof JsonData) return $value;
 		$f = new JsonData((string)$value);
 		return $f;
 	}
 
 	public function ___sleepValue(Page $page, Field $field, $value) {
-		return $value->getJson();
+		$json = $value->getJson();
+		$this->log->message("sleepValue = $json");
+		return $json;
 	}
 
 	public function sanitizeValue(Page $page, Field $field, $value) {
@@ -47,9 +50,9 @@ class FieldtypeJsonNative extends Fieldtype implements Module {
 		$database = $this->wire("database");
 
 		if(empty($subfield) || $subfield == "data") {
-			$path = '$.*';
+			$path = '$.*.value';
 		} else {
-			$path = '$.' . $subfield;
+			$path = '$.' . $subfield . ".value";
 		}
 
 		$table = $database->escapeTable($table);
@@ -115,12 +118,41 @@ class JsonData extends WireData {
 			try {
 				$vals = json_decode($value);
 				foreach($vals as $k => $v) {
-					$this->set($k, $v);
+					if(is_object($v)) {
+						if(!property_exists($v, "type") || empty($v->type)) {
+							$v->type = "text";
+						}
+						$this->set($k, new JsonValue($v->type, $v->value));
+					} else {
+						$this->set($k, new JsonValue("text", $v));
+					}
 				}
 			} catch(Exception $e) {
 				// JSON parsing failed. Do nothing for now.
 			}
 		}
+	}
+	
+	public function set($key, $value) {
+		if($key == 'data') {
+			if(!is_array($value)) $value = (array) $value;
+			return $this->setArray($value); 
+		}
+		if(! $value instanceof JsonValue) {
+			$val = new JsonValue();
+			$val->value = $value;
+			$val->type = "text";
+			$value = $val;
+		}
+		$v = isset($this->data[$key]) ? $this->data[$key] : null;
+		if(!$this->isEqual($key, $v, $value)) $this->trackChange($key, $v, $value); 
+		$this->data[$key] = $value; 
+		return $this; 
+	}
+
+	protected function isEqual($key, $value1, $value2) {
+		if($key) {}
+		return json_encode($value1) === json_encode($value2);
 	}
 	
 	public function getJson() {
@@ -132,3 +164,16 @@ class JsonData extends WireData {
 	}
 }
 
+class JsonValue {
+	public $value;
+	public $type;
+	
+	public function __construct($type = "text", $value = null) {
+		$this->type = $type;
+		$this->value = $value;
+	}
+	
+	public function __toString() {
+		return $this->value;
+	}
+}

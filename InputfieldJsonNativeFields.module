@@ -13,6 +13,8 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 	
 	public function init() {
 
+		$this->initInputfieldScripts();
+
 		$textfield = $this->modules->get("InputfieldText");
 		$textfield->attr('size', 40);
 		
@@ -52,12 +54,14 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		parent::init();
 	}
 	
-	public function renderReady(Inputfield $parent = null, $renderValueMode = false) {
+	protected function initInputfieldScripts() {
 		// Make sure that Datetime style and script are loaded:
 		$f = $this->modules->get("InputfieldDatetime");
-		$f->renderReady($parent, $renderValueMode);
-		
-		parent::renderReady($parent, $renderValueMode);
+		$f->datepicker = 3;
+		// Set a time input format so that the timepicker addon js gets included
+		$f->dateInputFormat = 'Y-m-d';
+		$f->timeInputFormat = 'H:i';
+		$f->renderReady(null, false);
 	}
 	
 	public function ___render() {
@@ -104,16 +108,19 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 				"datetime"		=>	$this->_("Date and Time")
 			));
 			$selfield->attr('data-idsuffix', $n);
-			$selfield->attr('data-idprefix', $this->name);
-			$selfield->attr('id+name', "{$this->id}_value_$n");
-			$selfield->attr('value', 'text');
+			$selfield->attr('data-idprefix', $this->id);
+			$selfield->attr('id+name', "{$this->id}_type_$n");
+			$selfield->attr('value', $v->type ?: "text");
 
+			$inpValue = $this->getValueField($v->type ?: "text", "{$this->id}_value_$n", $v->value);
+			/*
 			$inpValue = $this->modules->get("InputfieldText");
 			$inpValue->addClass("InputfieldJsonNativeMonitor InputfieldJsonNativeValue");
 			$inpValue->size = 40;
 			$inpValue->attr('id+name', "{$this->id}_value_$n");
 			$inpValue->attr('value',$this->sanitizer->entities1($v));
-
+			*/
+			
 			$tbl->row(array(
 				$inpName->render(),
 				$selfield->render(),
@@ -167,14 +174,49 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$btn->attr('value', $this->_("Add"));
 		$fs->append($btn);
 		
-		$out = "<div class='InputfieldWrapper InputfieldJsonNativeWrap' data-id='{$this->id}' data-name='{$this->name}'>\n" .
+		$rowcount = count($data);
+		$out = "<div class='InputfieldWrapper InputfieldJsonNativeWrap' data-rowcount='$rowcount' data-id='{$this->id}' data-name='{$this->name}'>\n" .
 			   $tbl->render() . "\n" .
 			   $fs->render() . "\n" .
-			   "<input type='hidden' id='{$this->id}' name='{$this->id}' value='" . $this->sanitizer->entities($value->getJson()) . "'>\n" .
+			   "<input type='hidden' id='{$this->id}' name='{$this->name}' value='" . $this->sanitizer->entities($value->getJson()) . "'>\n" .
 			   "</div>\n"
 		;
 		
 		return $out;
+	}
+	
+	protected function getValueField($type, $id, $value) {
+		switch($type) {
+			case "date":
+				$f = $this->modules->get("InputfieldDatetime");
+				$f->datepicker = 2;
+				$f->dateOutputFormat = $f->dateInputFormat = 'Y-m-d';
+				$f->addClass('InputfieldDatetimeDatepicker3');
+				break;
+			case "datetime":
+				$f = $this->modules->get("InputfieldDatetime");
+				$f->datepicker = 2;
+				$f->dateOutputFormat = $f->dateInputFormat = 'Y-m-d';
+				$f->timeOutputFormat = $f->timeInputFormat = 'H:i';
+				$f->addClass('InputfieldDatetimeDatepicker3');
+				break;
+			case "integer":
+				$f = $this->modules->get("InputfieldInteger");
+				break;
+			case "float":
+				$f = $this->modules->get("InputfieldFloat");
+				break;
+			default:
+				$f = $this->modules->get("InputfieldText");
+				$f->size = 40;
+		}
+		
+		$f->attr('name+id', $id);
+		$f->addClass("InputfieldJsonNativeMonitor InputfieldJsonNativeValue");
+		$f->columnWidth = 40;
+		$f->attr('value', $this->sanitizer->entities1($value));
+		
+		return $f;
 	}
 	
 }
