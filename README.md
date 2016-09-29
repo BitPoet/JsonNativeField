@@ -27,10 +27,26 @@ ProcessWire's regular selector syntax.
 
 The fieldtype was created with supporting user-defined fields e.g. for personal profiles in mind.
 
+## Field types
+
+The latest release lets you assign and change a field type for the value, so you can enter your data
+using one of the following formats leveraging native ProcessWire input fields:
+
+- Text
+- Integer
+- Float
+- Date (Format currently fixed as Y-m-d)
+- Date + Time (Format fixed as Y-m-d H:i)
+
+Note that there isn't currently any plausibility checking done (neither in the UI nor in the
+PHP code), so changing a field to date and entering a string that can't be parsed as such
+will generate an error and probably shoot your data directly into nirvana.
+
+Field types are stored with the data.
+
 ## Known issues
 
 - Selector operator checks aren't implemented yet
-- Currently, all values are treated as strings
 - The UI for the inputfield is still a bit rough, as is the JS code
 - Some more sanity checks for field names and values are necessary
 
