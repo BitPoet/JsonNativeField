@@ -17,20 +17,15 @@ $(document).ready(function() {
 	}
 
 	function insertRow(inpidP, wrapel) {
-		console.dir(wrapel);
 		var cnt = $(wrapel).find('tr').length + 1;
 		var inpid = $(wrapel).data('id');
-		console.log(inpid);
 
 		var $name = $(wrapel).find('#' + inpid + '_name_new');
-		console.dir($name);
 		var $type = $(wrapel).find('#' + inpid + '_type_new');
-		console.dir($type);
 		var $value = $(wrapel).find('#' + inpid + '_value_new');
-		console.dir($value);
 		
 		if(!$name.val()) {
-			alert('Name must not be empty for new field');
+			alert(config.jsonnative.messages.name_not_empty);
 			return;
 		}
 		
@@ -42,7 +37,7 @@ $(document).ready(function() {
 		});
 		
 		if(exists) {
-			alert('A field with name "' + $name.val() + '" already exists');
+			alert(config.jsonnative.messages.name_exists + ": " + $name.val());
 			return;
 		}
 		
@@ -51,13 +46,29 @@ $(document).ready(function() {
 			selval = 'text';
 		}
 		
+		var $newtypesel = $(config.jsonnative.typeselect, {
+			id:			inpid + '_type_' + cnt,
+			data:		{
+				idsuffix:		$type.data('idsuffix'),
+				idprefix:		$type.data('idprefix')
+			}
+		});
+		$newtypesel.val(selval);
+		
+		var newval = $value.val();
+		var $newfld = $(config.jsonnative[selval], {
+			id:			inpid + '_value_' + cnt,
+			class:		'InputfieldJsonNativeMonitor InputfieldJsonNativeValue'
+		});
+		$newfld.val(newval);
+		
 		var $row = $('<tr>', {
 			role:		'row',
 		}).append(
 			$('<td>').append(
 				$('<input>', {
 					type:		'text',
-					id:			'Inputfield_testjson_name_' + cnt,
+					id:			inpid + '_name_' + cnt,
 					class:		'InputfieldJsonNativeMonitor InputfieldJsonNativeName',
 					attr:		{
 						size:		40
@@ -66,21 +77,10 @@ $(document).ready(function() {
 				})
 			),
 			$('<td>').append(
-				$(config.jsonnative.typeselect, {
-					id:			'Inputfield_testjson_type_' + cnt,
-					val:		selval
-				})
+				$newtypesel
 			),
 			$('<td>').append(
-				$(config.jsonnative[selval], {
-					id:			'Inputfield_testjson_value_' + cnt,
-					class:		'InputfieldJsonNativeMonitor InputfieldJsonNativeValue',
-					val:		$value.val(),
-					data:		{
-						idsuffix:		$type.data('idsuffix'),
-						idprefix:		$type.data('idprefix')
-					}
-				})
+				$newfld
 			),
 			$('<td>').append(
 				$('<a>', {
@@ -90,7 +90,7 @@ $(document).ready(function() {
 				})
 			)
 		);
-		console.dir($row);
+
 		var $lastrow = $(wrapel).find('table').append($row);
 		
 		$row.find('.InputfieldJsonNativeMonitor').each(function(idx, inp) {
@@ -136,29 +136,22 @@ $(document).ready(function() {
 		$newinp.attr('id', $valuefield.attr('id'));
 		$newinp.attr('name', $valuefield.attr('name'));
 		$newinp.val(curval);
+
 		$valuefield.replaceWith($newinp);
 	}
 
 	$('.InputfieldJsonNativeWrap').each(function(idx, el) {
-		var jsonid = $(el).data('id');
-		$(el).find('.InputfieldJsonNativeMonitor').each(function(idx, inp) {
-			$(inp).on('change', function(evt) {
-				updateJson(jsonid, el);
-			});
+		$(el).on('change', '.InputfieldJsonNativeMonitor', function(evt) {
+			updateJson($(evt.delegateTarget).data('id'), evt.delegateTarget);
 		});
-		$(el).find('.InputfieldJsonNativeAdd').each(function(idx, inp) {
-			$(inp).on('click', function(evt) {
-				insertRow(jsonid, el);
-			});
+		$(el).on('click', '.InputfieldJsonNativeAdd', function(evt) {
+			insertRow($(evt.delegateTarget).data('id'), evt.delegateTarget);
 		});
-		$(el).find('.InputfieldJsonNativeDelete').each(function(idx, inp) {
-			$(inp).click(function(evt) {
-				deleteRow(jsonid, el, evt.target);
-			});
+		$(el).on('click', '.InputfieldJsonNativeDelete', function(evt) {
+			deleteRow($(evt.delegateTarget).data('id'), evt.delegateTarget, evt.currentTarget);
 		});
-	});
-	
-	$('.InputfieldJsonNativeWrap').on('change', '.InputfieldJsonNativeType', function(evt) {
-		switchType(evt.currentTarget, evt.delegateTarget);
+		$(el).on('change', '.InputfieldJsonNativeType', function(evt) {
+			switchType(evt.currentTarget, evt.delegateTarget);
+		});
 	});
 });
