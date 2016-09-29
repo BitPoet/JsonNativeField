@@ -15,16 +15,12 @@ class FieldtypeJsonNative extends Fieldtype implements Module {
 	}
 	
 	public function ___wakeupValue(Page $page, Field $field, $value) {
-		$this->log->message("wakeupValue($value)");
 		if($value instanceof JsonData) return $value;
-		$f = new JsonData((string)$value);
-		return $f;
+		return new JsonData((string)$value);
 	}
 
 	public function ___sleepValue(Page $page, Field $field, $value) {
-		$json = $value->getJson();
-		$this->log->message("sleepValue = $json");
-		return $json;
+		return $value->getJson();
 	}
 
 	public function sanitizeValue(Page $page, Field $field, $value) {
