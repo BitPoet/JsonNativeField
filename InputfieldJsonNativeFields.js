@@ -51,7 +51,6 @@ $(document).ready(function() {
 			selval = 'text';
 		}
 		
-		console.dir($type);
 		var $newtypesel = $(config.jsonnative.typeselect);
 		var prefix = $type.data('idprefix');
 		$newtypesel.attr('id', inpid + '_type_' + cnt);
@@ -127,7 +126,6 @@ $(document).ready(function() {
 	}
 	
 	function switchType(selinp, wrap) {
-		console.log("switchType(" + $(selinp).attr('id') + ", wrap)");
 		var $selinp = $(selinp);
 		var $wrap = $(wrap);
 		
@@ -145,7 +143,6 @@ $(document).ready(function() {
 		$newinp.attr('name', curname);
 		$newinp.attr('id', curid);
 		$newinp.val(curval);
-		console.dir($newinp)
 		$valuefield.replaceWith($newinp);
 		
 		$valuefield.trigger('change');
