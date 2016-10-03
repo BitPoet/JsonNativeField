@@ -5,8 +5,8 @@ class FieldtypeJsonNative extends Fieldtype implements Module {
 	public static function getModuleInfo() {
 		return array(
 			"title"				=>	"Fieldtype Json Native",
-			"summary"			=>	"Fieldtype utilizing native MySQL support for JSON columns",
-			"version"			=>	"0.0.1",
+			"summary"			=>	"Fieldtype utilizing native MySQL support for JSON columns. Will be installed automatically when InputfieldJsonNativeFields is installed.",
+			"version"			=>	"0.0.2",
 		);
 	}
 	
@@ -132,7 +132,7 @@ class JsonData extends WireData {
 	public function set($key, $value) {
 		if($key == 'data') {
 			if(!is_array($value)) $value = (array) $value;
-			return $this->setArray($value); 
+			return $this->setArray($this->removeIllegalKeywords($value));
 		}
 		if(! $value instanceof JsonValue) {
 			$val = new JsonValue();
@@ -146,6 +146,13 @@ class JsonData extends WireData {
 		return $this; 
 	}
 
+	public function removeIllegalKeywords($inp) {
+		foreach(arry_keys($inp) as $k) {
+			if(array_key_exists($k, self::$illegalKeywords)) unset($inp[$k]);
+		}
+		return $inp;
+	}
+	
 	protected function isEqual($key, $value1, $value2) {
 		if($key) {}
 		return json_encode($value1) === json_encode($value2);

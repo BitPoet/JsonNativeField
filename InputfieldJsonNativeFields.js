@@ -147,6 +147,8 @@ $(document).ready(function() {
 		$newinp.val(curval);
 		console.dir($newinp)
 		$valuefield.replaceWith($newinp);
+		
+		$valuefield.trigger('change');
 	}
 
 	$('.InputfieldJsonNativeWrap').each(function(idx, el) {

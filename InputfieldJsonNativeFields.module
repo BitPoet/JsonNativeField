@@ -6,12 +6,59 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		return array(
 			"title"				=>	"Inputfield Json Native Fields",
 			"summary"			=>	"Stores multiple searchable key-value-pairs in a JSON field",
-			"version"			=>	"0.0.1",
+			"version"			=>	"0.0.2",
 			"installs"			=>	array("FieldtypeJsonNative"),
 		);
 	}
+		protected static $textsettings = array(
+		"textformatters",
+		"minlength",
+		"maxlength",
+		"size",
+		"placeholder",
+		"pattern"
+	);
 	
-	public function init() {
+	public function __construct() {
+		parent::__construct();
+		
+		$this->set('dateInputFormat', InputfieldDatetime::defaultDateInputFormat);
+		$this->set('timeInputFormat', '');
+		$this->set('timeInputSelect', 0);
+		$this->set('datepicker', InputfieldDatetime::datepickerFocus); 
+		$this->set('yearRange', '');
+		$this->set('defaultToday', 0); 
+		$this->set('dateOnlyOutputFormat', 'Y-m-d');
+		$this->set('_timeOutputFormat', 'H:i');
+		$this->set('dateOutputFormat', 'Y-m-d H:i');
+
+		if($this->languages) foreach($this->languages as $language) {
+			/** @var Language $language */
+			// account for alternate formats in other languages
+			if($language->isDefault()) continue;
+			$this->set("dateInputFormat$language", '');
+			$this->set("timeInputFormat$language", '');
+			$this->set("dateOutputFormat$language", '');
+			$this->set("dateOnlyOutputFormat$language", '');
+		}
+		
+		$this->set("showCount", 0);
+		$this->set("stripTags", 0);
+		$this->set("textformatters", false);
+		$this->set("minlength", 0);
+		$this->set("maxlength", null);
+		$this->set("size", 40);
+		$this->set("placeholder", '');
+		if($this->languages) foreach($this->languages as $language) {
+			/** @var Language $language */
+			// account for alternate formats in other languages
+			if($language->isDefault()) continue;
+			$this->set("placeholder$language", '');
+		}
+		$this->set("pattern", '');
+	}
+	
+	public function renderReady(Inputfield $parent = null, $renderValueMode = false) {
 
 		$this->initInputfieldScripts();
 
@@ -22,13 +69,17 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		
 		$datefield = $this->modules->get("InputfieldDatetime");
 		$datefield->datepicker = 2;
-		$datefield->dateOutputFormat = $datefield->dateInputFormat = 'Y-m-d';
+		$datefield->dateOutputFormat = $this->dateOnlyOutputFormat;
+		$datefield->dateInputFormat = $this->dateInputFormat;
+		$datefield->timeOutputFormat = '';
+		$datefield->timeInputFormat = '';
 		$datefield->addClass('InputfieldDatetimeDatepicker3');
 		
 		$dtfield = $this->modules->get("InputfieldDatetime");
 		$dtfield->datepicker = 1;
-		$dtfield->dateOutputFormat = $dtfield->dateInputFormat = 'Y-m-d';
-		$dtfield->timeOutputFormat = $dtfield->timeInputFormat = 'H:i';
+		$dtfield->dateOutputFormat = $this->dateOutputFormat;
+		$dtfield->dateInputFormat = $this->dateInputFormat;
+		$dtfield->timeInputFormat = $this->timeInputFormat;
 		$dtfield->addClass('InputfieldDatetimeDatepicker3');
 		
 		$selfield = $this->modules->get("InputfieldSelect");
@@ -51,7 +102,7 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 			)
 		));
 
-		parent::init();
+		parent::renderReady($parent, $renderValueMode);
 	}
 	
 	protected function initInputfieldScripts() {
@@ -59,8 +110,8 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$f = $this->modules->get("InputfieldDatetime");
 		$f->datepicker = 3;
 		// Set a time input format so that the timepicker addon js gets included
-		$f->dateInputFormat = 'Y-m-d';
-		$f->timeInputFormat = 'H:i';
+		$f->dateInputFormat = $this->dateInputFormat;
+		$f->timeInputFormat = $this->timeInputFormat;
 		$f->renderReady(null, false);
 	}
 	
@@ -98,6 +149,7 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 			$inpName->size = 40;
 			$inpName->attr('id+name', "{$this->id}_name_$n");
 			$inpName->attr('value',$this->sanitizer->entities1($k));
+			$inpName->attr('pattern', '^[a-zA-Z]([a-zA-Z0-9-_\.]*[a-zA-Z0-9])?$');
 			
 			$selfield = $this->modules->get("InputfieldSelect");
 			$selfield->addClass("InputfieldJsonNativeType");
@@ -113,13 +165,6 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 			$selfield->attr('value', $v->type ?: "text");
 
 			$inpValue = $this->getValueField($v->type ?: "text", "{$this->id}_value_$n", $v->value);
-			/*
-			$inpValue = $this->modules->get("InputfieldText");
-			$inpValue->addClass("InputfieldJsonNativeMonitor InputfieldJsonNativeValue");
-			$inpValue->size = 40;
-			$inpValue->attr('id+name', "{$this->id}_value_$n");
-			$inpValue->attr('value',$this->sanitizer->entities1($v));
-			*/
 			
 			$tbl->row(array(
 				$inpName->render(),
@@ -141,6 +186,7 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$inpName->size = 40;
 		$inpName->attr('name+id', "{$this->id}_name_new");
 		$inpName->attr('value', '');
+		$inpName->attr('pattern', '^[a-zA-Z]([a-zA-Z0-9-_\.]*[a-zA-Z0-9])?$');
 		$fs->append($inpName);
 		
 		$selfield = $this->modules->get("InputfieldSelect");
@@ -160,10 +206,19 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$fs->append($selfield);
 		
 		$inpValue = $this->modules->get("InputfieldText");
+		foreach(self::$textsettings as $tfield) {
+			if($this->{$tfield}) {
+				$inpValue->attr($tfield, $this->{$tfield});
+			}
+		}
+		if($this->minlength) $inpValue->minlength = $this->minlength;
+		if($this->maxlength) $inpValue->maxlength = $this->maxlength;
+		if($this->showCount) $inpValue->showCount = $this->showCount;
+		if($this->stripTags) $inpValue->stripTags = $this->stripTags;
+		
 		$inpValue->addClass("InputfieldJsonNativeValue");
 		$inpValue->label = $this->_("Value for new field (may be empty)");
 		$inpValue->columnWidth = 34;
-		$inpValue->size = 40;
 		$inpValue->attr('name+id', "{$this->id}_value_new");
 		$inpValue->attr('value', '');
 		$fs->append($inpValue);
@@ -189,15 +244,20 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		switch($type) {
 			case "date":
 				$f = $this->modules->get("InputfieldDatetime");
-				$f->datepicker = 2;
-				$f->dateOutputFormat = $f->dateInputFormat = 'Y-m-d';
+				$f->datepicker = 3;
+				$f->dateInputFormat = $this->dateInputFormat;
+				$f->dateOutputFormat = $this->dateOutputFormat;
+				$f->timeInputFormat = '';
+				$f->timeOutputFormat = '';
 				$f->addClass('InputfieldDatetimeDatepicker3');
 				break;
 			case "datetime":
 				$f = $this->modules->get("InputfieldDatetime");
-				$f->datepicker = 2;
-				$f->dateOutputFormat = $f->dateInputFormat = 'Y-m-d';
-				$f->timeOutputFormat = $f->timeInputFormat = 'H:i';
+				$f->datepicker = 3;
+				$f->dateInputFormat = $this->dateInputFormat;
+				$f->mdateOutputFormat = $this->dateOnlyOutputFormat;
+				$f->timeInputFormat = $this->timeInputFormat;
+				$f->timeOutputFormat = $this->timeOutputFormat;
 				$f->addClass('InputfieldDatetimeDatepicker3');
 				break;
 			case "integer":
@@ -208,7 +268,16 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 				break;
 			default:
 				$f = $this->modules->get("InputfieldText");
-				$f->size = 40;
+				foreach(self::$textsettings as $tfield) {
+					if($this->{$tfield}) {
+						$f->attr($tfield, $this->{$tfield});
+					}
+				}
+				if($this->minlength) $f->minlength = $this->minlength;
+				if($this->maxlength) $f->maxlength = $this->maxlength;
+				if($this->showCount) $f->showCount = $this->showCount;
+				if($this->stripTags) $f->stripTags = $this->stripTags;
+				if($this->textformatters) $f->textformatters = $this->textformatters;
 		}
 		
 		$f->attr('name+id', $id);
@@ -219,4 +288,300 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		return $f;
 	}
 	
-}
+	public function ___getConfigInputfields() {
+		$inputfields = parent::___getConfigInputfields();
+		
+		$languages = $this->wire('languages');
+		$datetime = $this->wire('datetime');
+		$wdt = new WireDateTime();
+
+		$fieldset = $this->modules->get('InputfieldFieldset');
+		$fieldset->label = $this->_("Settings for custom date and datetime fields");
+		
+		/** @var InputfieldRadios $f */
+		$f= $this->modules->get('InputfieldRadios');
+		$f->label = $this->_('Date Picker');
+		$f->setAttribute('name', 'datepicker'); 
+		$f->addOption(InputfieldDatetime::datepickerNo, $this->_('No date/time picker'));
+		$f->addOption(InputfieldDatetime::datepickerFocus, $this->_('Date/time picker on field focus') . ' ' . 
+			$this->_('(recommended)')); 
+		$f->addOption(InputfieldDatetime::datepickerClick, $this->_('Date/time picker on button click')); 
+		// @todo this datepickerInline option displays a datepicker that is too large, not fully styled
+		$f->addOption(InputfieldDatetime::datepickerInline, $this->_('Inline date picker always visible (no time picker)')); 
+		$f->attr('value', (int) $this->datepicker); 
+		$fieldset->append($f);
+
+		/** @var InputfieldSelect $f */
+		$f = $this->modules->get('InputfieldSelect');
+		$f->attr('name', '_dateInputFormat');
+		$f->label = $this->_('Date Input Format');
+		$f->description = $this->_('Select the format to be used for user input to this field. Your selection will populate the field below this, which you may customize further if needed.');
+		$f->icon = 'calendar';
+		$f->addOption('', $this->_('None'));
+		$date = strtotime('2016-04-08 5:10:02 PM');
+		foreach($datetime->getDateFormats() as $format) {
+			$dateFormatted = $datetime->formatDate($date, $format);
+			if($format == 'U') $dateFormatted .= " " . $this->_('(unix timestamp)');
+			$f->addOption($format, $dateFormatted);
+			if($this->dateInputFormat == $format) $f->attr('value', $format);
+		}
+		$f->attr('onchange', "$('#Inputfield_dateInputFormat').val($(this).val());");
+		$fieldset->add($f);
+
+		/** @var InputfieldSelect $f */
+		$f = $this->modules->get('InputfieldSelect');
+		$f->attr('name', '_timeInputFormat');
+		$f->label = $this->_('Time Input Format');
+		$f->addOption('', $this->_('None'));
+		$f->description = $this->_('Select an optional time format to be used for input in fields that support date and time.'); 
+		$f->icon = 'clock-o';
+		foreach($datetime->getTimeFormats() as $format) {
+			if(strpos($format, '!') === 0) continue; // skip relative formats
+			$timeFormatted = $datetime->formatDate($date, $format);
+			$f->addOption($format, $timeFormatted);
+			if($this->timeInputFormat == $format) $f->attr('value', $format);
+		}
+		$f->attr('onchange', "$('#Inputfield_timeInputFormat').val($(this).val());");
+		$f->collapsed = Inputfield::collapsedBlank;
+		$f->columnWidth = 50;
+		$fieldset->add($f);
+	
+		/** @var InputfieldRadios $f */
+		$f = $this->modules->get("InputfieldRadios");
+		$f->attr('name', 'timeInputSelect');
+		$f->label = $this->_('Time Input Type');
+		$f->description = $this->_('Sliders (default) let the user slide controls to choose the time, where as Select lets the user select the time from a drop-down select.');
+		$f->icon = 'clock-o';
+		$f->addOption(0, $this->_('Sliders'));
+		$f->addOption(1, $this->_('Select'));
+		$f->optionColumns = 1;
+		$f->columnWidth = 50;
+		$f->showIf = "_timeInputFormat!='', datepicker!=" . InputfieldDatetime::datepickerNo;
+		$f->attr('value', $this->timeInputSelect);
+		$fieldset->add($f);
+
+		/** @var InputfieldText $f */
+		$f = $this->modules->get("InputfieldText");
+		$f->attr('name', 'dateInputFormat');
+		$f->attr('value', $this->dateInputFormat ? $this->dateInputFormat : InputfieldDatetime::defaultDateInputFormat);
+		$f->attr('size', 20);
+		$f->label = $this->_('Date Input Format Code');
+		$f->description = $this->_('This is automatically built from the date select above, unless you modify it.'); 
+		$f->icon = 'calendar';
+		$notes = $this->_('See the [PHP date](http://www.php.net/manual/en/function.date.php) function reference for more information on how to customize these formats.'); 
+		if($languages) $notes .= "\n" . $this->_('You may optionally specify formats for other languages here as well. Any languages left blank will inherit the default setting.'); 
+		$f->notes = $notes; 
+		$f->collapsed = Inputfield::collapsedYes;
+		$f1 = $f;
+		$fieldset->add($f);
+		
+		/** @var InputfieldText $f */
+		$f = $this->modules->get("InputfieldText");
+		$f->attr('name', 'timeInputFormat');
+		$f->attr('value', $this->timeInputFormat ? $this->timeInputFormat : '');
+		$f->attr('size', 20);
+		$f->label = $this->_('Time Input Format Code');
+		$f->description = $this->_('This is automatically built from the time select above, unless you modify it.'); 
+		$f->icon = 'clock-o';
+		$f->notes = $notes; 
+		$f->collapsed = Inputfield::collapsedYes;
+		$f2 = $f;
+		
+
+		if($languages) {
+			$f1->useLanguages = true; 
+			$f2->useLanguages = true; 
+			foreach($languages as $language) {
+				if($language->isDefault()) continue; 
+				$f1->set("value$language", (string) $this->get("dateInputFormat$language")); 	
+				$f2->set("value$language", (string) $this->get("timeInputFormat$language")); 	
+			}
+		}
+
+		$fieldset->add($f1);
+		$fieldset->add($f2);
+		
+		
+		$f = $this->modules->get('InputfieldSelect'); 
+		$f->attr('name', 'dateOnlyOutputFormat'); 
+		$f->label = $this->_('Date Output Format'); 
+		$f->description = $this->_('Select the format to be used when outputting dates with this field.') . ' ';
+		$f->description .= $this->_('For relative date/time formats, see the Time Output Format.'); 
+		$f->icon = 'calendar';
+		$f->addOption('', $this->_('None'));
+		$f->columnWidth = 50;
+		$date = strtotime('2016-04-08 5:10:02 PM');
+		$found = false;
+		foreach($wdt->getDateFormats() as $format) {
+			$dateFormatted = $wdt->formatDate($date, $format); 	
+			if($format == 'U') $dateFormatted .= " " . $this->_('(unix timestamp)');
+			$f->addOption($format, $dateFormatted); 
+			if(!$found && strpos($this->dateOutputFormat, $format) !== false) {
+				$f->attr('value', $format); 
+				$found = true; 
+			}
+		}
+		$f->attr('onchange', "$('#Inputfield_dateOutputFormat').val($(this).val() + ' ' + $('#Inputfield__timeOutputFormat').val());"); 
+		$fieldset->add($f); 
+
+		$f = $this->modules->get('InputfieldSelect'); 
+		$f->attr('name', '_timeOutputFormat'); 
+		$f->label = $this->_('Time Output Format'); 
+		$f->description = $this->_('For custom fields showing date and time, select the format to be used when outputting time with this field. This will be combined with the date format.'); 
+		$f->icon = 'clock-o';
+		$f->addOption('', $this->_('None'));
+		$f->columnWidth = 50;
+		$date = strtotime('5:10:02 PM');
+		$found = false;
+		foreach($wdt->getTimeFormats() as $format) {
+			$timeFormatted = $wdt->formatDate($date, $format); 	
+			$f->addOption($format, $timeFormatted); 
+			if(!$found && strpos($this->dateOutputFormat, $format) !== false) {
+				$f->attr('value', $format); 
+				$found = true; 
+			}
+		}
+		$f->attr('onchange', "$('#Inputfield_dateOutputFormat').val($('#Inputfield__dateOutputFormat').val() + ' ' + $(this).val());"); 
+		//$f->collapsed = Inputfield::collapsedBlank;
+		$fieldset->add($f); 
+
+		$f = $this->modules->get("InputfieldText"); 
+		$f->attr('name', 'dateOutputFormat'); 
+		$f->attr('value', $this->dateOutputFormat); 
+		$f->attr('size', 20); 
+		$f->label = $this->_('Date/Time Output Format Code');
+		$f->description = $this->_('The date/time will be output according to the format below. This is automatically built from the date/time selections above, but you may change it as needed to suit your needs.') . ' ';
+		$f->description .= $this->_('See the [PHP date](http://www.php.net/manual/en/function.date.php) function reference for more information on how to customize this format. Alternatively, you may use a [PHP strftime](http://www.php.net/manual/en/function.strftime.php) format if desired for localization.'); 
+		$f->icon = 'code';
+		$f->collapsed = Inputfield::collapsedYes; 
+		if($this->languages) {
+			$f->useLanguages = true; 
+			foreach($this->languages as $language) {
+				if($language->isDefault()) continue; 
+				$f->set("value$language", (string) $this->get('dateOutputFormat' . $language)); 
+			}
+		}
+		$fieldset->add($f); 
+
+		$inputfields->add($fieldset);
+		
+
+		$fieldset = $this->modules->get("InputfieldFieldset");
+		$fieldset->label = $this->_("Settings for custom text fields");
+		
+		$textformatters = $this->modules->find("className^=Textformatter"); 
+
+		if(count($textformatters)) {
+
+			$f = $this->modules->get('InputfieldAsmSelect'); 
+			$f->setAttribute('name', 'textformatters'); 
+			$f->label = $this->_('Text Formatters');
+
+			foreach($textformatters as $textformatter) {
+				$info = $textformatter->getModuleInfo();
+				$f->addOption($textformatter->className(), "$info[title]"); 
+			}
+
+			$f->setAttribute('value', is_array($this->textformatters) ? $this->textformatters : array()); 
+
+			$f->description = $this->_('If you want to apply any automatic formatting to the field when it is prepared for output, select one or more text formatters above. If you select more than one, drag them into the order they should be applied.'); 
+			$f->notes = $this->_('For plain text fields that will not contain HTML or markup, we recommend selecting the **HTML Entity Encoder** option above.');
+
+			$fieldset->append($f);
+		}
+
+		/** @var InputfieldInteger $f */
+		$f = $this->modules->get('InputfieldInteger');
+		$f->setAttribute('name', 'minlength');
+		$f->label = $this->_('Minimum length');
+		$f->setAttribute('value', (int) $this->minlength);
+		$f->setAttribute('size', 6);
+		$f->description = $this->_('The minimum length (in characters) that are required by this field.');
+		$f->notes = $this->_('If the field is not “required” then minimum length is only enforced when a value is present.'); 
+		$f->columnWidth = 50;
+		$fieldset->append($f);
+
+		/** @var InputfieldInteger $f */
+		$f = $this->modules->get('InputfieldInteger');
+		$f->setAttribute('name', 'maxlength'); 
+		$f->label = $this->_('Maximum length');
+		$f->setAttribute('value', $this->maxlength); 
+		$f->setAttribute('size', 6); 
+		$f->description = $this->_('The maximum length (in characters) that are allowed by this field.');
+		$f->notes = $this->_('A value of “0” indicates no maximum.');
+		$f->columnWidth = 50;
+		$fieldset->append($f);
+	
+		/** @var InputfieldRadios $f */
+		$f = $this->modules->get('InputfieldRadios');
+		$f->attr('name', 'showCount'); 
+		$f->label = $this->_('Counter'); 
+		$f->addOption(0, $this->_('No counter'));
+		$f->addOption(1, $this->_('Character counter'));
+		$f->addOption(2, $this->_('Word counter'));
+		$f->attr('value', (int) $this->getSetting('showCount'));
+		$f->description = $this->_('It is recommended that you show a character counter when using minimum/maximum length settings above.');
+		$f->optionColumns = 1;
+		if(!$f->attr('value')) $f->collapsed = Inputfield::collapsedYes;
+		$fieldset->add($f);
+	
+		/** @var InputfieldInteger $f */
+		$f = $this->modules->get('InputfieldInteger');
+		$f->setAttribute('name', 'size');
+		$f->label = $this->_('Size');
+		$f->setAttribute('value', $this->size > 0 ? $this->size : 0);
+		$f->setAttribute('size', 4);
+		$f->description = $this->_('The displayed width of this field (in characters). Set to 0 for full width.');
+		$f->collapsed = Inputfield::collapsedYes;
+		$fieldset->append($f);
+
+		/** @var InputfieldCheckbox $f */
+		$f = $this->modules->get('InputfieldCheckbox'); 
+		$f->attr('name', 'stripTags'); 
+		$f->label = $this->_('Strip Tags'); 
+		$f->description = $this->_('When checked, any HTML tags will be stripped from the input when the form is processed.'); 
+		$f->notes = $this->_('This is recommended if the field does not need to support HTML in it.'); 
+		$f->attr('value', 1);
+		if($this->stripTags) {
+			$f->attr('checked', 'checked');
+		} else {
+			$f->collapsed = Inputfield::collapsedYes;
+		}
+		$fieldset->append($f); 
+
+		/** @var InputfieldText $f */
+		$f = $this->modules->get('InputfieldText');
+		$f->setAttribute('name', 'placeholder'); 
+		$f->label = $this->_('Placeholder Text');
+		$f->setAttribute('value', $this->placeholder); 
+		$f->description = $this->_('Optional placeholder phrase of text that appears in the field when blank.'); 
+		$f->collapsed = Inputfield::collapsedBlank;
+		if($this->wire('languages')) {
+			$f->useLanguages = true;
+			foreach($this->wire('languages') as $language) {
+				if($language->isDefault()) continue;
+				$value = $this->getSetting("placeholder$language");
+				if(!is_null($value)) $f->set("value$language", $value);
+			}
+		}
+		$fieldset->append($f);
+
+		/** @var InputfieldText $f */
+		$f = $this->modules->get('InputfieldText');
+		$f->setAttribute('name', 'pattern'); 
+		$f->label = $this->_('Pattern');
+		$f->setAttribute('value', $this->pattern); 
+		$f->description = $this->_('Optional regular expression pattern to require in the input. This is used both client side (HTML5 pattern attribute) and server side for validation. Be sure to provide an example of the required pattern in your field description.'); // Pattern description
+		$f->notes = $this->_('See [html5pattern.com](http://html5pattern.com) for examples of patterns you can use and create.'); // Pattern notes
+		$f->collapsed = Inputfield::collapsedBlank;
+		$fieldset->append($f);
+
+		$inputfields->add($fieldset);
+		
+
+
+		
+		return $inputfields;
+	}
+	
+}
