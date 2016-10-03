@@ -3,27 +3,34 @@ $(document).ready(function() {
 	
 	function updateJson(inpid, wrapel) {
 		var $names = $(wrapel).find('.InputfieldJsonNativeName');
+		var $types = $(wrapel).find('.InputfieldJsonNativeType');
 		var $values = $(wrapel).find('.InputfieldJsonNativeValue');
 		
 		var jsobj = {};
 		
 		for(var i = 0; i < $names.length; i++) {
 			if($names.eq(i).val()) {
-				jsobj[$names.eq(i).val()] = $values.eq(i).val();
+				jsobj[$names.eq(i).val()] = {
+					type:	$types.eq(i).val(),
+					value:	$values.eq(i).val()
+				};
 			}
 		}
 		
 		$('#' + inpid).val(JSON.stringify(jsobj));
 	}
 
-	function insertRow(inpid, wrapel) {
-		var cnt = $(wrapel).find('tr').length + 1;
+	function insertRow(inpidP, wrapel) {
+		var cnt = $(wrapel).data('rowcount') + 1;
+		$(wrapel).data('rowcount', cnt);
+		var inpid = $(wrapel).data('id');
 
 		var $name = $(wrapel).find('#' + inpid + '_name_new');
+		var $type = $(wrapel).find('#' + inpid + '_type_new');
 		var $value = $(wrapel).find('#' + inpid + '_value_new');
-
+		
 		if(!$name.val()) {
-			alert('Name must not be empty for new field');
+			alert(config.jsonnative.messages.name_not_empty);
 			return;
 		}
 		
@@ -35,9 +42,31 @@ $(document).ready(function() {
 		});
 		
 		if(exists) {
-			alert('A field with name "' + $name.val() + '" already exists');
+			alert(config.jsonnative.messages.name_exists + ": " + $name.val());
 			return;
 		}
+		
+		var selval = $type.val();
+		if(! selval) {
+			selval = 'text';
+		}
+		
+		console.dir($type);
+		var $newtypesel = $(config.jsonnative.typeselect);
+		var prefix = $type.data('idprefix');
+		$newtypesel.attr('id', inpid + '_type_' + cnt);
+		$newtypesel.attr('name', inpid + '_type_' + cnt);
+		$newtypesel.addClass('InputfieldJsonNativeType');
+		$newtypesel.attr('data-idsuffix', cnt);
+		$newtypesel.attr('data-idprefix', prefix);
+		$newtypesel.val(selval);
+		
+		var newval = $value.val();
+		var $newfld = $(config.jsonnative[selval]);
+		$newfld.addClass('InputfieldJsonNativeMonitor InputfieldJsonNativeValue');
+		$newfld.attr('id', inpid + '_value_' + cnt);
+		$newfld.attr('name', inpid + '_value_' + cnt);
+		$newfld.val(newval);
 		
 		var $row = $('<tr>', {
 			role:		'row',
@@ -45,7 +74,7 @@ $(document).ready(function() {
 			$('<td>').append(
 				$('<input>', {
 					type:		'text',
-					id:			'Inputfield_Inputfield_testjson_name_' + cnt,
+					id:			inpid + '_name_' + cnt,
 					class:		'InputfieldJsonNativeMonitor InputfieldJsonNativeName',
 					attr:		{
 						size:		40
@@ -54,15 +83,10 @@ $(document).ready(function() {
 				})
 			),
 			$('<td>').append(
-				$('<input>', {
-					type:		'text',
-					id:			'Inputfield_Inputfield_testjson_value_' + cnt,
-					class:		'InputfieldJsonNativeMonitor InputfieldJsonNativeValue',
-					attr:		{
-						size:		40
-					},
-					value:		$value.val()
-				})
+				$newtypesel
+			),
+			$('<td>').append(
+				$newfld
 			),
 			$('<td>').append(
 				$('<a>', {
@@ -101,23 +125,42 @@ $(document).ready(function() {
 		$(tgt).closest('tr').remove();
 		updateJson(inpid, wrapel);
 	}
+	
+	function switchType(selinp, wrap) {
+		console.log("switchType(" + $(selinp).attr('id') + ", wrap)");
+		var $selinp = $(selinp);
+		var $wrap = $(wrap);
+		
+		var selval = $selinp.val();
+		if(! selval) {
+			selval = "text";
+		}
+		
+		var $valuefield = $wrap.find('#' + $selinp.data('idprefix') + "_value_" + $selinp.data('idsuffix'));
+		var curval = $valuefield.val();
+		var curname = $valuefield.attr('name');
+		var curid = $valuefield.attr('id');
+		
+		var $newinp = $(config.jsonnative[selval]);
+		$newinp.attr('name', curname);
+		$newinp.attr('id', curid);
+		$newinp.val(curval);
+		console.dir($newinp)
+		$valuefield.replaceWith($newinp);
+	}
 
 	$('.InputfieldJsonNativeWrap').each(function(idx, el) {
-		var jsonid = $(el).data('id');
-		$(el).find('.InputfieldJsonNativeMonitor').each(function(idx, inp) {
-			$(inp).on('change', function(evt) {
-				updateJson(jsonid, el);
-			});
+		$(el).on('change', '.InputfieldJsonNativeMonitor', function(evt) {
+			updateJson($(evt.delegateTarget).data('id'), evt.delegateTarget);
 		});
-		$(el).find('.InputfieldJsonNativeAdd').each(function(idx, inp) {
-			$(inp).on('click', function(evt) {
-				insertRow(jsonid, el);
-			});
+		$(el).on('click', '.InputfieldJsonNativeAdd', function(evt) {
+			insertRow($(evt.delegateTarget).data('id'), evt.delegateTarget);
 		});
-		$(el).find('.InputfieldJsonNativeDelete').each(function(idx, inp) {
-			$(inp).click(function(evt) {
-				deleteRow(jsonid, el, evt.target);
-			});
+		$(el).on('click', '.InputfieldJsonNativeDelete', function(evt) {
+			deleteRow($(evt.delegateTarget).data('id'), evt.delegateTarget, evt.currentTarget);
+		});
+		$(el).on('change', '.InputfieldJsonNativeType', function(evt) {
+			switchType(evt.currentTarget, evt.delegateTarget);
 		});
 	});
 });
