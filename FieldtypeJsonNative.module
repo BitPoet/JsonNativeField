@@ -6,7 +6,7 @@ class FieldtypeJsonNative extends Fieldtype implements Module {
 		return array(
 			"title"				=>	"Fieldtype Json Native",
 			"summary"			=>	"Fieldtype utilizing native MySQL support for JSON columns. Will be installed automatically when InputfieldJsonNativeFields is installed.",
-			"version"			=>	"0.0.2",
+			"version"			=>	"0.0.3",
 		);
 	}
 	

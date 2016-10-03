@@ -52,8 +52,7 @@ alphanumeric characters (a-zA-Z0-9) and hyphens are allowed.
 
 The only field name currently explicitely disallowed is "data". It will be silently dropped.
 
-The table of fields in the backend is sorted by field names in ascending order. In the raw
-field, there is no specific order though since object properties aren't positional.
+The table of fields in the backend is sorted by field names in ascending order.
 
 ## Configuration
 

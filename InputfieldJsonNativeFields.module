@@ -6,7 +6,7 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		return array(
 			"title"				=>	"Inputfield Json Native Fields",
 			"summary"			=>	"Stores multiple searchable key-value-pairs in a JSON field",
-			"version"			=>	"0.0.2",
+			"version"			=>	"0.0.3",
 			"installs"			=>	array("FieldtypeJsonNative"),
 		);
 	}
@@ -98,7 +98,8 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 			"typeselect"	=>	$selfield->render(),
 			"messages"		=>	array(
 				"name_not_empty"	=>	$this->_("Name must not be empty for new field"),
-				"name_exists"		=>	$this->_("A field with this name already exists")
+				"name_exists"		=>	$this->_("A field with this name already exists"),
+				"invalidname"		=>	$this->_("Field names may contain hyphens but must start and end with an alphanumeric character.")
 			)
 		));
 
@@ -131,13 +132,14 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		));
 		
 		$data = $value->getArray();
+		ksort($data);
 		
 		$n = 1;
 		
 		$tbl->row(array(
-			$this->_("Note: Name must be unique"),
+			$this->_("Note: Name must be unique and start and end with a letter. Inside, alphanumeric characters and hyphens are allowed."),
 			"",
-			$this->_("Value can hold any content"),
+			$this->_("Value can hold any content. You can configure a pattern in the field settings and/or strip HTML tags."),
 			""
 		));
 		
@@ -579,9 +581,8 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$inputfields->add($fieldset);
 		
 
-
-		
 		return $inputfields;
+
 	}
 	
-}
+}
