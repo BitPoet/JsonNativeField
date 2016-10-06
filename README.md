@@ -57,9 +57,9 @@ field, there is no specific order though since object properties aren't position
 
 ## Configuration
 
-You can configure settings for date, date+time and text fields on the field's Input tab, e.g.
-min and max length, validation patterns, date and time input and output formats etc., settings
-for numeric field types are on the todo list.
+You can configure settings for every type of custom field (date, date+time, integer, float and text)
+on the field's Input tab, e.g. min and max length, validation patterns, date and time input and output
+formats etc.
 
 ## Known issues
 
@@ -70,7 +70,6 @@ for numeric field types are on the todo list.
 ## ToDo
 
 - Test date output formats
-- Add settings for numeric fields
 - Add selector operator/sanity checks
 - Allow field settings to be changed in template context
 - Generate error/warning when "data" field name is rejected
