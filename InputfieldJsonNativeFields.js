@@ -91,7 +91,8 @@ $(document).ready(function() {
 				$('<a>', {
 					href:		'#',
 					class:		'InputfieldJsonNativeDelete',
-					html:		'<i class="fa fa-trash"> </i> Delete'
+					title:		'Delete',
+					html:		'<i class="fa fa-trash"> </i>'
 				})
 			)
 		);

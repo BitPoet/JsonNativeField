@@ -6,7 +6,7 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		return array(
 			"title"				=>	"Inputfield Json Native Fields",
 			"summary"			=>	"Stores multiple searchable key-value-pairs in a JSON field",
-			"version"			=>	"0.0.3",
+			"version"			=>	"0.0.4",
 			"installs"			=>	array("FieldtypeJsonNative"),
 		);
 	}
@@ -56,6 +56,18 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 			$this->set("placeholder$language", '');
 		}
 		$this->set("pattern", '');
+
+		$this->set('intInputType', 'text');
+		$this->set('intMin', ''); // blank means not set
+		$this->set('intMax', '');  // blank means not set
+		$this->set('intSize', '10');
+		$this->set('intInitValue', '');
+
+		$this->set('floatInputType', 'text');
+		$this->set('floatMin', ''); // blank means not set
+		$this->set('floatMax', '');  // blank means not set
+		$this->set('floatSize', '10');
+		$this->set('floatInitValue', '');
 	}
 	
 	public function renderReady(Inputfield $parent = null, $renderValueMode = false) {
@@ -66,6 +78,18 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$textfield->attr('size', 40);
 		
 		$intfield = $this->modules->get("InputfieldInteger");
+		$intfield->size = $this->intSize;
+		$intfield->min = $this->intMin;
+		$intfield->max = $this->intMax;
+		$intfield->inputType = $this->intInputType;
+		$intfield->initValue = $this->intInitValue;
+		
+		$floatfield  = $this->modules->get("InputfieldFloat");
+		$floatfield->size = $this->floatSize;
+		$floatfield->min = $this->floatMin;
+		$floatfield->max = $this->floatMax;
+		$floatfield->inputType = $this->floatInputType;
+		$floatfield->initValue = $this->floatInitValue;
 		
 		$datefield = $this->modules->get("InputfieldDatetime");
 		$datefield->datepicker = 2;
@@ -86,6 +110,7 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$selfield->addOptions(array(
 			"text"			=>	$this->_("Text"),
 			"integer"		=>	$this->_("Integer"),
+			"float"			=>	$this->_("Float"),
 			"date"			=>	$this->_("Date"),
 			"datetime"		=>	$this->_("Date and Time")
 		));
@@ -93,6 +118,7 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$this->config->js("jsonnative", array(
 			"text"			=>	$textfield->render(),
 			"integer"		=>	$intfield->render(),
+			"float"			=>	$floatfield->render(),
 			"date"			=>	$datefield->render(),
 			"datetime"		=>	$dtfield->render(),
 			"typeselect"	=>	$selfield->render(),
@@ -143,7 +169,7 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 			""
 		));
 		
-		$trashbtn = "<a class='InputfieldJsonNativeDelete' href='#'><li class='fa fa-trash'> " . $this->_("Delete") . "</a>";
+		$trashbtn = "<a class='InputfieldJsonNativeDelete' href='#' title='" . $this->_("Delete") . "'><li class='fa fa-trash'> </li> </a>";
 
 		foreach($data as $k => $v) {
 			$inpName = $this->modules->get("InputfieldText");
@@ -158,6 +184,7 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 			$selfield->addOptions(array(
 				"text"			=>	$this->_("Text"),
 				"integer"		=>	$this->_("Integer"),
+				"float"			=>	$this->_("Float"),
 				"date"			=>	$this->_("Date"),
 				"datetime"		=>	$this->_("Date and Time")
 			));
@@ -198,8 +225,9 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$selfield->addOptions(array(
 			"text"			=>	$this->_("Text"),
 			"integer"		=>	$this->_("Integer"),
+			"float"			=>	$this->_("Float"),
 			"date"			=>	$this->_("Date"),
-			"datetime"		=>	$this->_("Date and Time")
+			"datetime"		=>	$this->_("Date and Time"),
 		));
 		$selfield->attr('data-idsuffix', "new");
 		$selfield->attr('data-idprefix', $this->id);
@@ -264,9 +292,19 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 				break;
 			case "integer":
 				$f = $this->modules->get("InputfieldInteger");
+				$f->size = $this->intSize;
+				$f->min = $this->intMin;
+				$f->max = $this->intMax;
+				$f->inputType = $this->intInputType;
+				$f->initValue = $this->intInitValue;
 				break;
 			case "float":
 				$f = $this->modules->get("InputfieldFloat");
+				$f->size = $this->floatSize;
+				$f->min = $this->floatMin;
+				$f->max = $this->floatMax;
+				$f->inputType = $this->floatInputType;
+				$f->initValue = $this->floatInitValue;
 				break;
 			default:
 				$f = $this->modules->get("InputfieldText");
@@ -296,6 +334,12 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$languages = $this->wire('languages');
 		$datetime = $this->wire('datetime');
 		$wdt = new WireDateTime();
+
+		/*
+		 * =============================================
+		 * Date Fields
+		 * =============================================
+		 */
 
 		$fieldset = $this->modules->get('InputfieldFieldset');
 		$fieldset->label = $this->_("Settings for custom date and datetime fields");
@@ -466,7 +510,12 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$fieldset->add($f); 
 
 		$inputfields->add($fieldset);
-		
+
+		/*
+		 * ================================================
+		 * Text Field
+		 * ================================================
+		 */		
 
 		$fieldset = $this->modules->get("InputfieldFieldset");
 		$fieldset->label = $this->_("Settings for custom text fields");
@@ -580,6 +629,121 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 
 		$inputfields->add($fieldset);
 		
+		/*
+		 * ======================================================
+		 * Integer Fields
+		 * ======================================================
+		 */
+		
+		$fieldset = $this->modules->get("InputfieldFieldset");
+		$fieldset->label = $this->_("Settings for custom integer fields");
+
+		$f = $this->wire('modules')->get('InputfieldRadios');
+		$f->attr('name', 'intInputType');
+		$f->label = $this->_('Numeric Input Type'); 
+		$f->addOption('text', $this->_('Text')); 
+		$f->addOption('number', $this->_('Number (HTML5)')); 
+		$f->attr('value', $this->intInputType);
+		$f->description = $this->_('Choosing the "Number" type enables some additional client-side validation in browsers that support it.');
+		$f->columnWidth = 50;
+		$fieldset->append($f);
+		
+		$f = $this->wire('modules')->get('InputfieldInteger');
+		$f->attr('name', 'intSize');
+		$f->label = $this->_('Input Size'); 
+		$f->description = $this->_('Specify the size attribute for the input, or specify 0 for full width.');
+		$f->notes = sprintf($this->_('The default value is %d.'), $f->attr('size'));
+		$f->columnWidth = 50;
+		$f->attr('value', $this->intSize);
+		$f->attr('min', 0);
+		$f->attr('type', 'number');
+		$fieldset->append($f);
+
+		$f = $this->wire('modules')->get('InputfieldText');
+		$f->attr('name', 'intMin');
+		$f->attr('value', $this->intMin); 
+		$f->label = $this->_('Minimum Value'); 
+		$f->description = $this->_('The minimum allowed value for this field. Leave blank to ignore.'); 
+		$f->columnWidth = 50;
+		$fieldset->append($f);
+
+		$f = $this->wire('modules')->get('InputfieldText');
+		$f->attr('name', 'inMax');
+		$f->attr('value', $this->intMax); 
+		$f->label = $this->_('Maximum Value'); 
+		$f->description = $this->_('The maximum allowed value for this field. Leave blank to ignore.'); 
+		$f->columnWidth = 50;
+		$fieldset->append($f);
+	
+		if($this->hasFieldtype === false) {
+			$f = $this->wire('modules')->get('InputfieldText');
+			$f->attr('name', 'intInitValue');
+			$f->attr('value', $this->intInitValue);
+			$f->label = $this->_('Initial value');
+			$f->description = $this->_('Initial assigned value.');
+			$f->collapsed = Inputfield::collapsedBlank;
+			$fieldset->append($f);
+		}
+
+		$inputfields->add($fieldset);
+
+		/*
+		 * ======================================================
+		 * Float Fields
+		 * ======================================================
+		 */
+		
+		$fieldset = $this->modules->get("InputfieldFieldset");
+		$fieldset->label = $this->_("Settings for custom float fields");
+
+		$f = $this->wire('modules')->get('InputfieldRadios');
+		$f->attr('name', 'floatInputType');
+		$f->label = $this->_('Numeric Input Type'); 
+		$f->addOption('text', $this->_('Text')); 
+		$f->addOption('number', $this->_('Number (HTML5)')); 
+		$f->attr('value', $this->floatInputType);
+		$f->description = $this->_('Choosing the "Number" type enables some additional client-side validation in browsers that support it.');
+		$f->columnWidth = 50;
+		$fieldset->append($f);
+		
+		$f = $this->wire('modules')->get('InputfieldInteger');
+		$f->attr('name', 'floatSize');
+		$f->label = $this->_('Input Size'); 
+		$f->description = $this->_('Specify the size attribute for the input, or specify 0 for full width.');
+		$f->notes = sprintf($this->_('The default value is %d.'), $f->attr('size'));
+		$f->columnWidth = 50;
+		$f->attr('value', $this->floatSize);
+		$f->attr('min', 0);
+		$f->attr('type', 'number');
+		$fieldset->append($f);
+
+		$f = $this->wire('modules')->get('InputfieldText');
+		$f->attr('name', 'floatMin');
+		$f->attr('value', $this->floatMin); 
+		$f->label = $this->_('Minimum Value'); 
+		$f->description = $this->_('The minimum allowed value for this field. Leave blank to ignore.'); 
+		$f->columnWidth = 50;
+		$fieldset->append($f);
+
+		$f = $this->wire('modules')->get('InputfieldText');
+		$f->attr('name', 'floatMax');
+		$f->attr('value', $this->floatMax); 
+		$f->label = $this->_('Maximum Value'); 
+		$f->description = $this->_('The maximum allowed value for this field. Leave blank to ignore.'); 
+		$f->columnWidth = 50;
+		$fieldset->append($f);
+	
+		if($this->hasFieldtype === false) {
+			$f = $this->wire('modules')->get('InputfieldText');
+			$f->attr('name', 'floatInitValue');
+			$f->attr('value', $this->floatInitValue);
+			$f->label = $this->_('Initial value');
+			$f->description = $this->_('Initial assigned value.');
+			$f->collapsed = Inputfield::collapsedBlank;
+			$fieldset->append($f);
+		}
+
+		$inputfields->add($fieldset);
 
 		return $inputfields;
 
