@@ -1,4 +1,4 @@
-<?php
+<?php namespace ProcessWire;
 
 
 class FieldtypeJsonNative extends Fieldtype implements Module {
@@ -6,17 +6,21 @@ class FieldtypeJsonNative extends Fieldtype implements Module {
 		return array(
 			"title"				=>	"Fieldtype Json Native",
 			"summary"			=>	"Fieldtype utilizing native MySQL support for JSON columns. Will be installed automatically when InputfieldJsonNativeFields is installed.",
+<<<<<<< HEAD
+			"version"			=>	"0.0.5",
+=======
 			"version"			=>	"0.0.4",
+>>>>>>> origin/dev
 		);
 	}
 	
 	public function getBlankValue(Page $page, Field $field) {
-		return new JsonData();
+		return new JNJsonData();
 	}
 	
 	public function ___wakeupValue(Page $page, Field $field, $value) {
-		if($value instanceof JsonData) return $value;
-		return new JsonData((string)$value);
+		if($value instanceof JNJsonData) return $value;
+		return new JNJsonData((string)$value);
 	}
 
 	public function ___sleepValue(Page $page, Field $field, $value) {
@@ -24,12 +28,12 @@ class FieldtypeJsonNative extends Fieldtype implements Module {
 	}
 
 	public function sanitizeValue(Page $page, Field $field, $value) {
-		if(! $value instanceof JsonData) $value = new JsonData((string)$value);
+		if(! $value instanceof JNJsonData) $value = new JNJsonData((string)$value);
 		return $value;
 	}
 
 	public function ___exportValue(Page $page, Field $field, $value, array $options = array()) {
-		if($value instanceof JsonData) $value = $value->getJson();
+		if($value instanceof JNJsonData) $value = $value->getJson();
 		return $value; 
 	}
 
@@ -38,7 +42,7 @@ class FieldtypeJsonNative extends Fieldtype implements Module {
 	 *
 	 */
 	public function ___formatValue(Page $page, Field $field, $value) {
-		if($value instanceof JsonData) $value = $value->getJson();
+		if($value instanceof JNJsonData) $value = $value->getJson();
 		return $value;
 	}
 
@@ -68,7 +72,7 @@ class FieldtypeJsonNative extends Fieldtype implements Module {
 
 	
 	public function getDatabaseSchema(Field $field) {
-		$engine = $this->wire('config')->dbEngine; 
+		$engine = "InnoDB"; 
 		$charset = $this->wire('config')->dbCharset;
 		$schema = array(
 			'pages_id' => 'int UNSIGNED NOT NULL', 
@@ -95,11 +99,7 @@ class FieldtypeJsonNative extends Fieldtype implements Module {
     }
 	
 	public function install() {
-		if($this->config->dbEngine != "InnoDB") {
-			throw new WireException($this->_("InnoDB database engine needs to be used for native JSON support"));
-		}
-		
-		$dbver = $this->database->getAttribute(PDO::ATTR_SERVER_VERSION);
+		$dbver = $this->database->getAttribute(\PDO::ATTR_SERVER_VERSION);
 		if(version_compare($dbver, '5.7.8', '<')) {
 			throw new WireException(sprintf($this->_("MySQL Server version needs to be at least 5.7.8 for fully working JSON support, installed version is %s"), $dbver));
 		}
@@ -107,7 +107,7 @@ class FieldtypeJsonNative extends Fieldtype implements Module {
 }
 
 
-class JsonData extends WireData {
+class JNJsonData extends WireData {
 	public function __construct($value = NULL) {
 		parent::__construct();
 		if($value !== NULL) {
@@ -118,9 +118,9 @@ class JsonData extends WireData {
 						if(!property_exists($v, "type") || empty($v->type)) {
 							$v->type = "text";
 						}
-						$this->set($k, new JsonValue($v->type, $v->value));
+						$this->set($k, new JNJsonValue($v->type, $v->value));
 					} else {
-						$this->set($k, new JsonValue("text", $v));
+						$this->set($k, new JNJsonValue("text", $v));
 					}
 				}
 			} catch(Exception $e) {
@@ -129,15 +129,55 @@ class JsonData extends WireData {
 		}
 	}
 	
-	public function set($key, $value) {
+	/**
+	 * Set or add a field with the given name
+	 *
+	 * ~~~
+	 * // Value is string, generates a text field:
+	 * $page->nativeField->set("myfield1", "some text in this field");
+	 *
+	 * // Value is an array, first element is the type, second is the value
+	 * $page->nativeField->set("myfield2", ["integer", 1234]);
+	 *
+	 * // Value is a JNJsonValue object
+	 * $page->nativeField->set("myfield3", new JNJsonValue("datetime", time()));
+	 *
+	 * // Remove a field
+	 * $page->nativeField->set("myfield2", null);
+	 *
+	 * // Set multiple fields at once
+	 * $page->nativeFields->set([
+	 * 	"myfield1"	=>	["text", "first field content"],
+	 * 	"myfield2"	=>	["float", 3.141592687],
+	 * 	"myfield3"	=>	new JNJsonValue("datetime", time() + 7200)
+	 * ]);
+	 * ~~~
+	 *
+	 * @param string $key The field name
+	 * @param string|array|JNJsonValue|null $value
+	 */
+	public function set($key, $value = null) {
 		if($key == 'data') {
 			if(!is_array($value)) $value = (array) $value;
 			return $this->setArray($this->removeIllegalKeywords($value));
 		}
-		if(! $value instanceof JsonValue) {
-			$val = new JsonValue();
-			$val->value = $value;
-			$val->type = "text";
+		
+		if(is_array($key)) {
+			foreach($key as $k => $v) {
+				$this->set($k, $v);
+			}
+			return $this;
+		}
+		
+		if(! $value instanceof JNJsonValue) {
+			$val = new JNJsonValue();
+			if(is_array($value)) {
+				$val->value = $value[1];
+				$val->type = $value[0];
+			} else {
+				$val->value = $value;
+				$val->type = "text";
+			}
 			$value = $val;
 		}
 		$v = isset($this->data[$key]) ? $this->data[$key] : null;
@@ -146,6 +186,18 @@ class JsonData extends WireData {
 		return $this; 
 	}
 
+<<<<<<< HEAD
+	public function remove($key) {
+		if(!isset($this->data[$key]))
+			return $this;
+		
+		$this->trackChange($key, $this->data[$key], null);
+		unset($this->data[$key]);
+		return $this;
+	}
+
+=======
+>>>>>>> origin/dev
 	public function removeIllegalKeywords($inp) {
 		foreach(arry_keys($inp) as $k) {
 			if(array_key_exists($k, self::$illegalKeywords)) unset($inp[$k]);
@@ -167,7 +219,7 @@ class JsonData extends WireData {
 	}
 }
 
-class JsonValue {
+class JNJsonValue {
 	public $value;
 	public $type;
 	
