@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-<?php
-
+<?php namespace ProcessWire;
 
 class InputfieldJsonNativeFields extends Inputfield implements Module {
 	public static function getModuleInfo() {
