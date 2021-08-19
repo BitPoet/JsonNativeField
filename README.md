@@ -45,7 +45,6 @@ will generate an error and probably shoot your data directly into nirvana.
 
 Field types are stored with the data.
 
-<<<<<<< HEAD
 ## API Usage
 
 You can set field values through the API. The unformatted value for the JsonNativeField is
@@ -71,7 +70,7 @@ $page->nativeFields->set([
 	"myfield3"	=>	new JNJsonValue("datetime", time() + 7200)
 ]);
 ```
-=======
+
 ## Field Names
 
 Name fields are currently configured to start and end with a letter (a-zA-Z). In between,
@@ -87,7 +86,6 @@ field, there is no specific order though since object properties aren't position
 You can configure settings for every type of custom field (date, date+time, integer, float and text)
 on the field's Input tab, e.g. min and max length, validation patterns, date and time input and output
 formats etc.
->>>>>>> origin/dev
 
 ## Known issues
 
