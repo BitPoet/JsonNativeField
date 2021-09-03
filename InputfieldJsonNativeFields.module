@@ -1,12 +1,11 @@
-<?php
-
+<?php namespace ProcessWire;
 
 class InputfieldJsonNativeFields extends Inputfield implements Module {
 	public static function getModuleInfo() {
 		return array(
 			"title"				=>	"Inputfield Json Native Fields",
 			"summary"			=>	"Stores multiple searchable key-value-pairs in a JSON field",
-			"version"			=>	"0.0.4",
+			"version"			=>	"0.0.5",
 			"installs"			=>	array("FieldtypeJsonNative"),
 		);
 	}
@@ -29,7 +28,7 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 		$this->set('yearRange', '');
 		$this->set('defaultToday', 0); 
 		$this->set('dateOnlyOutputFormat', 'Y-m-d');
-		$this->set('_timeOutputFormat', 'H:i');
+		$this->set('timeOutputFormat', 'H:i');
 		$this->set('dateOutputFormat', 'Y-m-d H:i');
 
 		if($this->languages) foreach($this->languages as $language) {
@@ -276,7 +275,7 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 				$f = $this->modules->get("InputfieldDatetime");
 				$f->datepicker = 3;
 				$f->dateInputFormat = $this->dateInputFormat;
-				$f->dateOutputFormat = $this->dateOutputFormat;
+				$f->dateOutputFormat = $this->dateOnlyOutputFormat;
 				$f->timeInputFormat = '';
 				$f->timeOutputFormat = '';
 				$f->addClass('InputfieldDatetimeDatepicker3');
@@ -285,8 +284,8 @@ class InputfieldJsonNativeFields extends Inputfield implements Module {
 				$f = $this->modules->get("InputfieldDatetime");
 				$f->datepicker = 3;
 				$f->dateInputFormat = $this->dateInputFormat;
-				$f->mdateOutputFormat = $this->dateOnlyOutputFormat;
-				$f->timeInputFormat = $this->timeInputFormat;
+				$f->dateOutputFormat = $this->dateOnlyOutputFormat;
+				$f->timeInputFormat = $this->timeOutputFormat;
 				$f->timeOutputFormat = $this->timeOutputFormat;
 				$f->addClass('InputfieldDatetimeDatepicker3');
 				break;
